@@ -243,11 +243,11 @@
       const lvl = $("monthSelect").value;
       const rampFactor = parseFloat($("rampSelect").value);
       
-      // 复制基础目标值
+    
       Object.keys(baseTargets[lvl]).forEach(prod => {
         let value = baseTargets[lvl][prod];
         
-        // 应用Ramping系数
+     
         if (rampFactor !== 1) {
           value *= rampFactor;
           
@@ -378,7 +378,7 @@
       const gapTxt = gapDesc(ctx.sales, ctx.targets, ctx.acc);
       const nextComm = simNextTotal(ctx.acc, ctx.sales, ctx.targets);
       const nextCommTxt = nextComm.min === nextComm.max ? fmt(nextComm.min) : `${fmt(nextComm.min)} – ${fmt(nextComm.max)}`;
-      // 格式化差距显示
+    
 const formatGap = (value, isDecimal) => isDecimal ? value.toFixed(1) : Math.ceil(value);
 line.textContent = `You are only ${gapTxt} away from the next tier ${(next * 100).toFixed(0)}% accelerator, estimated commission ${nextCommTxt}`;
     }
