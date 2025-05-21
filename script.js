@@ -195,6 +195,8 @@ function updateGap(ctx) {
     if (mpGap > 0) neededParts.push(`${mpGap} MP`);
     if (hsiaGap > 0) neededParts.push(`${hsiaGap} HSIA`);
     nextAcc = 1.25;
+    if (mpGap   > 0) sim.MP   = t.MP;
+    if (hsiaGap > 0) sim.HSIA = t.HSIA;
     // Old logic did not explicitly output this scenario; now we show MP/HSIA shortfall for 125% accelerator.
   }
   // Scenario 2: Core met, Bcon below target, and at least one add-on category below target -> need Bcon to reach 150%
