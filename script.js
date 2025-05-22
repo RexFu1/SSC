@@ -187,7 +187,7 @@ function updateGap(ctx, commNow) {
 
 let nextAcc = 1;
 const neededParts = [];
-let sim = null;  // 初始化空，稍后赋值
+let sim = null;  
 
 // Scenario 1: Core (MP/HSIA) below target AND Bcon below target
 if (!coreMet && !bconMet) {
@@ -196,11 +196,9 @@ if (!coreMet && !bconMet) {
   if (mpGap > 0) neededParts.push(`${mpGap} MP`);
   if (hsiaGap > 0) neededParts.push(`${hsiaGap} HSIA`);
   nextAcc = 1.25;
-  sim = {
-    ...s,
-    MP: t.MP,
-    HSIA: t.HSIA
-  }; // 局部构造模拟，仅补 MP 和 HSIA，不污染其他项
+  sim = { ...s };                    
+  if (s.MP < t.MP) sim.MP = t.MP; 
+  if (s.HSIA < t.HSIA) sim.HSIA = t.HSIA;
 }
 
   // Scenario 2: Core met, Bcon below target, and at least one add-on category below target -> need Bcon to reach 150%
