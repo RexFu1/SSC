@@ -169,7 +169,7 @@ function computeCommissionFor(sim, acc) {
 }
 
 /* ======== Next Tier Output ======== */
-function updateGap(ctx) {
+function updateGap(ctx, commNow) {
   const line = $("gapLine");
   if (ctx.acc === 2) {
     line.textContent = "Congratulations! You have achieved the highest tier 200% accelerator!";
@@ -185,18 +185,24 @@ function updateGap(ctx) {
   const valueAddMet = (s.CD + s.BWifi + s.DCC) >= (t.CD + t.BWifi + t.DCC);
   const addAllMet = productAddMet && valueAddMet;
 
-  let nextAcc = 1;
-  const neededParts = [];
-  // Scenario 1: Core (MP/HSIA) below target AND Bcon below target -> need MP/HSIA to reach 125%
-  if (!coreMet && !bconMet) {
-    // Calculate how many MP/HSIA are needed
-    const mpGap = Math.max(0, Math.ceil(t.MP - s.MP));
-    const hsiaGap = Math.max(0, Math.ceil(t.HSIA - s.HSIA));
-    if (mpGap > 0) neededParts.push(`${mpGap} MP`);
-    if (hsiaGap > 0) neededParts.push(`${hsiaGap} HSIA`);
-    nextAcc = 1.25;
-    // Old logic did not explicitly output this scenario; now we show MP/HSIA shortfall for 125% accelerator.
-  }
+let nextAcc = 1;
+const neededParts = [];
+let sim = null;  // 初始化空，稍后赋值
+
+// Scenario 1: Core (MP/HSIA) below target AND Bcon below target
+if (!coreMet && !bconMet) {
+  const mpGap = Math.max(0, Math.ceil(t.MP - s.MP));
+  const hsiaGap = Math.max(0, Math.ceil(t.HSIA - s.HSIA));
+  if (mpGap > 0) neededParts.push(`${mpGap} MP`);
+  if (hsiaGap > 0) neededParts.push(`${hsiaGap} HSIA`);
+  nextAcc = 1.25;
+  sim = {
+    ...s,
+    MP: t.MP,
+    HSIA: t.HSIA
+  }; // 局部构造模拟，仅补 MP 和 HSIA，不污染其他项
+}
+
   // Scenario 2: Core met, Bcon below target, and at least one add-on category below target -> need Bcon to reach 150%
   else if (coreMet && !bconMet && !addAllMet) {
     const bconGap = Math.max(0, Math.ceil(t.Bcon - s.Bcon));
@@ -246,16 +252,17 @@ function updateGap(ctx) {
   }
 
   // Simulate achieving the next tier by setting unmet categories to target values for commission calculation
-  const sim = { ...s };
-  if (s.MP < t.MP) sim.MP = t.MP;
-  if (s.HSIA < t.HSIA) sim.HSIA = t.HSIA;
-  if (s.Bcon < t.Bcon) sim.Bcon = t.Bcon;
-  if (nextAcc === 2.0) {
-    const addGap = Math.max(0, (t.IoT + t.TSB + t.BTV) - (s.IoT + s.TSB + s.BTV));
-    const valGap = Math.max(0, (t.CD + t.BWifi + t.DCC) - (s.CD + s.BWifi + s.DCC));
-    if (addGap > 0) sim.IoT = s.IoT + addGap;
-    if (valGap > 0) sim.CD = s.CD + valGap;
-    // We assign the total shortfall to IoT and CD for simplicity in commission estimation.
+  if (!sim) {
+      sim = { ...s };
+      if (s.MP < t.MP) sim.MP = t.MP;
+      if (s.HSIA < t.HSIA) sim.HSIA = t.HSIA;
+      if (s.Bcon < t.Bcon) sim.Bcon = t.Bcon;
+      if (nextAcc === 2.0) {
+        const addGap = Math.max(0, (t.IoT + t.TSB + t.BTV) - (s.IoT + s.TSB + s.BTV));
+        const valGap = Math.max(0, (t.CD + t.BWifi + t.DCC) - (s.CD + s.BWifi + s.DCC));
+        if (addGap > 0) sim.IoT = s.IoT + addGap;
+        if (valGap > 0) sim.CD = s.CD + valGap;
+    }
   }
 
   const nextComm = computeCommissionFor(sim, nextAcc);
@@ -264,6 +271,7 @@ function updateGap(ctx) {
     : `${fmt(nextComm.min)} – ${fmt(nextComm.max)}`;
 
   line.textContent = `You are only ${gapText} away from the next tier ${(nextAcc * 100).toFixed(0)}% accelerator, estimated commission ${nextCommText}`;
+
 }
 
 /* ======== Validation ======== */
@@ -286,8 +294,9 @@ function validateRange() {
 function computeAll() {
   if (!validateRange()) return;
   const ctx = calcAccel();
-  computeCommission();
-  updateGap(ctx);
+  const comm = computeCommission();  
+  updateGap(ctx, comm);             
+
 }
 
 // Initialize table and default calculations on page load
